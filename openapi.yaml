@@ -1,12 +1,184 @@
-openapi: 3.0.0
+openapi: 3.0.3
 info:
-  title: API
-  description: A
-  version: 1.0.0
+  title: Books API
+  version: "1.0.0"
+
+servers:
+  - url: https://api.example.com/v1
+
 paths:
-  /example:
+  /books:
     get:
-      summary: Example endpoint
+      summary: Liste des livres
+      parameters:
+        - $ref: "#/components/parameters/perPage"
+        - $ref: "#/components/parameters/page"
+        - $ref: "#/components/parameters/createdBy"
       responses:
         '200':
-          description: Successful response
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Book"
+
+    post:
+      summary: Ajouter un livre
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BookInput"
+      responses:
+        '201':
+          description: Créé
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Book"
+        '403':
+          $ref: "#/components/responses/Forbidden"
+        '500':
+          $ref: "#/components/responses/InternalError"
+
+  /books/{id}:
+    put:
+      summary: Modifier un livre
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+
+      responses:
+        '204':
+          description: Mis à jour
+        '404':
+          $ref: "#/components/responses/NotFound"
+        '403':
+          $ref: "#/components/responses/Forbidden"
+
+    delete:
+      summary: Supprimer un livre
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Supprimé
+        '404':
+          $ref: "#/components/responses/NotFound"
+
+  /books/{id}/reviews:
+    get:
+      summary: recupere les avis d’un livre
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Review"
+
+components:
+  parameters:
+    perPage:
+      name: per_page
+      in: query
+      schema:
+        type: integer
+        default: 10
+        maximum: 100
+
+    page:
+      name: page
+      in: query
+      schema:
+        type: integer
+        default: 1
+
+    createdBy:
+      name: created_by
+      in: query
+      schema:
+        type: string
+
+  schemas:
+    BookBase:
+      type: object
+      properties:
+        title:
+          type: string
+          example: "Le Petit Prince"
+        author:
+          type: string
+          example: "Antoine de Saint-Exupéry"
+        year:
+          type: integer
+          minimum: 1800
+          maximum: 2025
+          example: 1943
+
+    BookInput:
+      allOf:
+        - $ref: "#/components/schemas/BookBase"
+
+    Book:
+      allOf:
+        - $ref: "#/components/schemas/BookBase"
+        - type: object
+          properties:
+            id:
+              type: integer
+              example: 1
+          required:
+            - id
+
+    Review:
+      type: object
+      properties:
+        reviewer:
+          type: string
+        comment:
+          type: string
+        rating:
+          type: integer
+          minimum: 1
+          maximum: 5
+
+  responses:
+    NotFound:
+      description: Ressource non trouvée
+
+    Forbidden:
+      description: Accès interdit
+
+    InternalError:
+      description: Erreur interne du serveur
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
