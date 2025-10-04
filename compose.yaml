@@ -1,0 +1,12 @@
+services:
+  api-docs:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "80:80"
+    x-develop:
+      watch:
+        - action : rebuild
+        path
+        - openapi.yaml
